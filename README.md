@@ -42,6 +42,17 @@ curl "localhost:3000/wallet/receive?address=0x...&amount=27.5"
 
 Mainnet needs explicit `?network=base`; everything defaults to `base-sepolia`.
 
+## PWA (M3, Base Sepolia testnet)
+
+```sh
+cp web/.env.example web/.env.local   # API URL, default localhost:3000
+pnpm --filter qris-wallet-web dev     # http://localhost:3100 (kamera: localhost = secure context)
+```
+
+Alur: Dompet (buat/impor, kunci PBKDF2 di localStorage — server tetap bisa
+membaca formatnya) → Pindai (kamera + jsQR, atau tempel payload di laptop) →
+Konfirmasi (statis: isi nominal; dinamis: langsung quote + countdown 90 dtk) →
+Bayar → progres live → struk. API mengizinkan origin PWA via `ALLOWED_ORIGINS`.
 
 ## Run (dev)
 

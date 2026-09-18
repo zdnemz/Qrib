@@ -7,7 +7,7 @@
 // is never logged, and server routes must NEVER call unlock() — in v1 prod
 // signing happens on the founder's device (M3), the API only reads chain state.
 
-import { randomBytes, scryptSync, createCipheriv, createDecipheriv } from "node:crypto";
+import { randomBytes, scryptSync, createCipheriv, createDecipheriv, pbkdf2Sync } from "node:crypto";
 import { generatePrivateKey, mnemonicToAccount, privateKeyToAccount } from "viem/accounts";
 import type { Address } from "viem";
 
@@ -15,7 +15,7 @@ const VERSION = 1;
 
 type KeystoreFile = {
   version: number;
-  kdf: { name: "scrypt"; n: number; r: number; p: number; salt: string };
+  kdf: { name: "scrypt" | "pbkdf2"; n?: number; r?: number; p?: number; iterations?: number; salt: string };
   cipher: { name: "aes-256-gcm"; iv: string };
   ciphertext: string;
   tag: string;
@@ -50,14 +50,24 @@ export function decryptPrivateKey(keystoreJson: string, passphrase: string): `0x
   } catch {
     throw new Error("not a valid keystore file");
   }
-  if (file.version !== VERSION || file.kdf?.name !== "scrypt" || file.cipher?.name !== "aes-256-gcm") {
+  if (file.version !== VERSION || file.cipher?.name !== "aes-256-gcm") {
     throw new Error("unsupported keystore version");
   }
-  const key = scryptSync(passphrase, Buffer.from(file.kdf.salt, "hex"), 32, {
-    N: file.kdf.n,
-    r: file.kdf.r,
-    p: file.kdf.p,
-  });
+  // The PWA encrypts with PBKDF2 (WebCrypto has no scrypt); the CLI with
+  // scrypt. The kdf name travels in the file so both sides stay readable.
+  let key: Buffer;
+  if (file.kdf?.name === "scrypt") {
+    key = scryptSync(passphrase, Buffer.from(file.kdf.salt, "hex"), 32, {
+      N: file.kdf.n!,
+      r: file.kdf.r!,
+      p: file.kdf.p!,
+    });
+  } else if (file.kdf?.name === "pbkdf2") {
+    if ((file.kdf.iterations ?? 0) < 100_000) throw new Error("keystore KDF too weak");
+    key = pbkdf2Sync(passphrase, Buffer.from(file.kdf.salt, "hex"), file.kdf.iterations!, 32, "sha256");
+  } else {
+    throw new Error("unsupported keystore version");
+  }
   try {
     const decipher = createDecipheriv("aes-256-gcm", key, Buffer.from(file.cipher.iv, "hex"));
     decipher.setAuthTag(Buffer.from(file.tag, "hex"));

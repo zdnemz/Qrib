@@ -5,6 +5,6 @@ export default defineConfig({
     globalSetup: "./test/setup-db.ts",
     setupFiles: ["./test/clean.ts"],
     testTimeout: 30_000,
-    exclude: ["node_modules", "dist"],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/.next/**"],
   },
 });

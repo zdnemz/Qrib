@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
 import { payments } from "./api/payments.js";
@@ -13,6 +14,14 @@ type Variables = { db: Db };
 export function createApp(database: Db) {
   const app = new Hono<{ Variables: Variables }>();
   app.use("*", requestId());
+  // Browser PWA calls the API cross-origin in dev (:3100 → :3000).
+  // Origins are an allowlist, never "*": payment endpoints stay same-site-only.
+  app.use(
+    "*",
+    cors({
+      origin: (process.env.ALLOWED_ORIGINS ?? "http://localhost:3100").split(",").map((s) => s.trim()),
+    }),
+  );
   app.use("*", async (c, next) => {
     c.set("db", database);
     await next();

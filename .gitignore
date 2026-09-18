@@ -6,3 +6,5 @@ coverage/
 # Encrypted keystores (and any sibling you create) are never committed.
 keystore.json
 *.keystore.json
+# Local code-index cache.
+.codegraph/
