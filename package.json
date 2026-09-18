@@ -17,6 +17,7 @@
     "db:push": "drizzle-kit push",
     "test": "vitest run",
     "wallet": "tsx scripts/wallet.ts",
+    "operator": "tsx scripts/operator.ts",
     "reconcile": "tsx scripts/reconcile.ts"
   },
   "dependencies": {

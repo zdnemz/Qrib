@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import { requestId } from "hono/request-id";
 
 import { payments } from "./api/payments.js";
+import { internal } from "./api/operator.js";
 import { qris } from "./api/qris.js";
 import { webhooks } from "./api/webhooks.js";
 import { db, type Db } from "./db/index.js";
@@ -55,6 +56,7 @@ export function createApp(database: Db) {
   app.route("/payments", payments);
   app.route("/webhooks", webhooks);
   app.route("/qris", qris);
+  app.route("/internal", internal);
 
   return app;
 }

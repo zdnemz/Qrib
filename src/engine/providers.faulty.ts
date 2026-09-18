@@ -19,7 +19,7 @@ export class FaultyOffRampProvider implements OffRampProvider {
     if (this.fault === "timeout") throw new ProviderTimeout("off-ramp timed out");
     // Partial: delivers 1 IDR under the locked quote — must never count as
     // complete, even though the shortfall is trivial (§14.1).
-    return { reference: `conv-${input.paymentId.slice(0, 8)}`, fiatAmountIdr: input.expectedFiatIdr - 1n, rateExecuted6: this.ref6 };
+    return { reference: `conv-${input.paymentId.slice(0, 8)}`, status: "COMPLETED" as const, fiatAmountIdr: input.expectedFiatIdr - 1n, rateExecuted6: this.ref6 };
   }
 }
 

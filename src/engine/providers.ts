@@ -11,8 +11,10 @@ export interface OffRampProvider {
   refRate6(): Promise<bigint>;
   execute(input: { paymentId: string; usdcMicros: bigint; expectedFiatIdr: bigint }): Promise<{
     reference: string;
-    fiatAmountIdr: bigint;
-    rateExecuted6: bigint;
+    /** Manual providers return PENDING — the human leg completes later. */
+    status: "COMPLETED" | "PENDING";
+    fiatAmountIdr?: bigint;
+    rateExecuted6?: bigint;
   }>;
 }
 
@@ -29,6 +31,8 @@ export interface ChainGateway {
   readonly name: string;
   submitPayment(input: { paymentId: string; usdcMicros: bigint }): Promise<{ txHash: string }>;
   confirmations(txHash: string): Promise<number>;
+  /** Funding endpoints for the books; null when the gateway doesn't disclose. */
+  legParties?(): { from: string; to: string } | null;
 }
 
 export class ProviderTimeout extends Error {}

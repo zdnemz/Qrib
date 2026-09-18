@@ -15,6 +15,7 @@ export class MockOffRampProvider implements OffRampProvider {
     const rate = await this.refRate6();
     return {
       reference: `conv-${input.paymentId.slice(0, 8)}`,
+      status: "COMPLETED" as const,
       fiatAmountIdr: (input.usdcMicros * rate) / 1_000_000_000_000n,
       rateExecuted6: rate,
     };
@@ -46,5 +47,8 @@ export class MockChainGateway implements ChainGateway {
   }
   async confirmations(): Promise<number> {
     return 12;
+  }
+  legParties() {
+    return { from: "mock-funding", to: "mock-offramp" };
   }
 }

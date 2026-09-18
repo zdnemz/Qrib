@@ -1,7 +1,7 @@
 # QRIS Wallet (v1)
 
 Payment wallet that spends USDC directly on real QRIS merchants: scan → confirm → paid.
-Spec: `docs/PRD.md`. Status: **M3a QRIS parse** (EMVCo TLV + CRC, static/dynamic, `POST /qris/parse`; PWA shell next).
+Spec: `docs/PRD.md`. Status: **M4 manual settlement** (first-party operator tasks + signed channel; mocks still default).
 
 ## Engine (M2, mocked providers)
 
@@ -18,9 +18,29 @@ pnpm test            # fault-injection suite (needs Postgres on :5435)
 pnpm reconcile --all # chain ↔ provider ↔ ledger truth-check (exit 1 on issues)
 ```
 
-Deliberately deferred: `POST /internal/tasks/:id/complete` (lands with manual
-providers, M4), cron schedule for reconcile (explicit runbook until M5),
+Deliberately deferred: cron schedule for reconcile (explicit runbook until M5),
 concurrent same-key races (single-node dogfood; `pg_advisory_xact_lock` when measured).
+
+## First-Party Settlement (M4, your money only — §6.2/§6.4)
+
+```sh
+export OPERATOR_SECRET="$(openssl rand -hex 32)"
+export ENGINE_OFFRAMP=manual ENGINE_PAYMENT=manual MANUAL_IDR_PER_USDC=15900
+pnpm dev &
+# pay from the PWA as usual; the legs stop at operator tasks:
+pnpm operator list --status PENDING
+# sell USDC on your own exchange account, then:
+pnpm operator complete <convTask> --status COMPLETED --reference EX-1 \
+  --fiat 27500 --rate 16000000000
+# pay the merchant QRIS from your own bank app, then:
+pnpm operator complete <settleTask> --status COMPLETED --reference QRIS-1 --proof struk.jpg
+pnpm reconcile --all
+```
+
+`ENGINE_CHAIN=real` (plus `FUNDING_PRIVATE_KEY`, `FUNDING_DESTINATION`,
+`ENGINE_NETWORK`) swaps the mock funding leg for a real Base transfer with
+confirmation polling. Default everything-mock is staging; default network is
+testnet — mainnet must be named explicitly, twice (ENGINE_NETWORK=base).
 
 ## Wallet (M1, Base Sepolia testnet)
 

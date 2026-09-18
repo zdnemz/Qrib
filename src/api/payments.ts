@@ -7,19 +7,13 @@ import { paymentQuotes } from "../db/schema.js";
 import { MockChainGateway, MockOffRampProvider, MockQrisProvider } from "../engine/providers.mock.js";
 import { FaultyQrisProvider } from "../engine/providers.faulty.js";
 import { createQuote } from "../engine/quote.js";
-import { authorize, cancel, execute, refund, PaymentError } from "../engine/service.js";
+import { authorize, cancel, execute, providersFromEnv, refund, PaymentError } from "../engine/service.js";
 import { InvalidTransition } from "../engine/states.js";
 import { getIntent, latestAttempts, listIntents } from "../engine/store.js";
 import { idempotency } from "./idempotency.js";
 
 type Variables = { db: Db };
 const payments = new Hono<{ Variables: Variables }>();
-
-const mocks = () => ({
-  offRamp: new MockOffRampProvider(),
-  payment: new MockQrisProvider(),
-  chain: new MockChainGateway(),
-});
 
 function shapeQuote(q: typeof paymentQuotes.$inferSelect) {
   return {
@@ -73,7 +67,7 @@ payments.post("/quote", idempotency, async (c) => {
   const fiat = bigintOrNull(body.fiatAmount);
   if (fiat === null) return c.json({ ok: false, error: "fiatAmount (IDR integer string) required" }, 400);
   try {
-    const quote = await createQuote(db, mocks().offRamp, {
+    const quote = await createQuote(db, providersFromEnv(db).offRamp, {
       fiatAmountIdr: fiat,
       merchantName: body.merchantName,
       merchantRef: body.merchantId,
@@ -98,10 +92,12 @@ payments.post("/:id/execute", idempotency, async (c) => {
   try {
     const body = await c.req.json().catch(() => ({}));
     // Staging fault injection (§14.2): body.provider selects the faulty set.
+    // Otherwise providers come from env (mocks by default, manual/real in prod).
+    const db = c.get("db");
     const providers =
       body.provider === "faulty-settle-fail"
         ? { offRamp: new MockOffRampProvider(), payment: new FaultyQrisProvider("failed"), chain: new MockChainGateway() }
-        : mocks();
+        : providersFromEnv(db);
     const intent = await execute(c.get("db"), pid(c), providers);
     return c.json({ ok: true, payment: await shape(c.get("db"), intent.id) });
   } catch (err) {
