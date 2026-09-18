@@ -6,6 +6,7 @@
 //   pnpm operator complete <taskId> --status COMPLETED --reference EX123 \
 //     --fiat 27500 --rate 16000000000 [--proof ...] [--note ...]
 //   pnpm operator complete <taskId> --status FAILED --note "reason"
+//   pnpm operator resolve <paymentId> --to FAILED|REFUND_REQUIRED|AUTHORIZED --reason "…"
 
 import "dotenv/config";
 import { createHmac, randomUUID } from "node:crypto";
@@ -59,8 +60,17 @@ async function main() {
     }
     if (!arg) throw new Error("usage: pnpm operator complete <taskId> --status …");
     console.log(JSON.stringify(await call("POST", `/internal/tasks/${arg}/complete`, body), null, 2));
+  } else if (cmd === "resolve") {
+    if (!arg) throw new Error("usage: pnpm operator resolve <paymentId> --to FAILED|REFUND_REQUIRED|AUTHORIZED --reason '…'");
+    const to = flag("to");
+    const reason = flag("reason");
+    if (!reason) throw new Error("--reason is required (the incident record)");
+    if (to !== "FAILED" && to !== "REFUND_REQUIRED" && to !== "AUTHORIZED") {
+      throw new Error("--to must be FAILED | REFUND_REQUIRED | AUTHORIZED");
+    }
+    console.log(JSON.stringify(await call("POST", `/internal/payments/${arg}/resolve`, { to, reason }), null, 2));
   } else {
-    throw new Error("usage: pnpm operator <list|complete> …");
+    throw new Error("usage: pnpm operator <list|complete|resolve> …");
   }
 }
 

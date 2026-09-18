@@ -7,7 +7,6 @@ export const TERMINAL = [
   "EXPIRED",
   "FAILED",
   "REFUNDED",
-  "RECONCILIATION_REQUIRED",
 ] as const;
 
 const EDGES: Record<string, string[]> = {
@@ -19,11 +18,15 @@ const EDGES: Record<string, string[]> = {
   CONVERSION_PENDING: ["FIAT_SETTLEMENT_PENDING", "REFUND_REQUIRED", "RECONCILIATION_REQUIRED"],
   FIAT_SETTLEMENT_PENDING: ["COMPLETED", "REFUND_REQUIRED", "RECONCILIATION_REQUIRED"],
   REFUND_REQUIRED: ["REFUNDED", "RECONCILIATION_REQUIRED"],
+  // Human-exit edges (§14.3). RECONCILIATION_REQUIRED is not a dead end: a
+  // human investigates and records the truth. The exits are intentionally
+  // narrow and gated by resolveReview(), which refuses unsafe targets based
+  // on whether funds left the wallet (a funded intent may only refund).
+  RECONCILIATION_REQUIRED: ["AUTHORIZED", "FAILED", "REFUND_REQUIRED"],
   COMPLETED: [],
   EXPIRED: [],
   FAILED: [],
   REFUNDED: [],
-  RECONCILIATION_REQUIRED: [],
 };
 
 export function canTransition(from: string, to: string): boolean {

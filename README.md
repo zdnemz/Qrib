@@ -42,6 +42,17 @@ pnpm reconcile --all
 confirmation polling. Default everything-mock is staging; default network is
 testnet — mainnet must be named explicitly, twice (ENGINE_NETWORK=base).
 
+**Recovery.** A retry never double-broadcasts: `execute()` is serialized per
+payment and resumes `CRYPTO_SUBMITTED`/`CONVERSION_PENDING`/
+`FIAT_SETTLEMENT_PENDING` from recorded evidence. A payment stuck in
+`RECONCILIATION_REQUIRED` is resolved by a signed operator action that
+records the reason and only permits safe exits (unfunded → `FAILED`
+or retry; funded → `REFUND_REQUIRED`):
+
+```sh
+pnpm operator resolve <paymentId> --to REFUND_REQUIRED --reason "merchant QR expired, refunding"
+```
+
 ## Watchdog (reconcile on a schedule, §14.3)
 
 ```sh
