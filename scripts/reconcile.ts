@@ -4,6 +4,7 @@
 import "dotenv/config";
 
 import { db, pool } from "../src/db/index.js";
+import { alertIfNeeded } from "../src/engine/alert.js";
 import { reconcileAll, reconcilePayment } from "../src/engine/reconcile.js";
 
 async function main() {
@@ -15,7 +16,12 @@ async function main() {
   }
   const { issues, stuck } = await reconcileAll(db);
   console.log(JSON.stringify({ issues, stuck }, null, 2));
-  process.exit(issues.length || stuck.length ? 1 : 0);
+  if (issues.length || stuck.length) {
+    // Watchdog bark (§13): non-zero exit for cron AND a push when configured.
+    const alerted = await alertIfNeeded(process.env.ALERT_WEBHOOK_URL, { issues, stuck });
+    console.log(JSON.stringify({ alerted }));
+    process.exit(1);
+  }
 }
 
 main()

@@ -1,0 +1,11 @@
+# Watchdog schedule (§14.3): chain ↔ provider ↔ ledger truth-check every
+# 5 minutes. Non-zero exit on any issue; ALERT_WEBHOOK_URL pages when set.
+# Install with: crontab ops/reconcile.cron   (edit QRIS_WALLET_DIR first)
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+
+QRIS_WALLET_DIR=/opt/qris-wallet
+DATABASE_URL=postgresql://qris:qris@localhost:5435/qris_wallet
+# ALERT_WEBHOOK_URL=https://hooks.example/your-channel
+
+*/5 * * * * cd $QRIS_WALLET_DIR && DATABASE_URL=$DATABASE_URL ALERT_WEBHOOK_URL=$ALERT_WEBHOOK_URL pnpm reconcile --all >> var/log/reconcile.log 2>&1

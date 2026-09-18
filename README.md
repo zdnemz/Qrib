@@ -42,6 +42,16 @@ pnpm reconcile --all
 confirmation polling. Default everything-mock is staging; default network is
 testnet — mainnet must be named explicitly, twice (ENGINE_NETWORK=base).
 
+## Watchdog (reconcile on a schedule, §14.3)
+
+```sh
+crontab ops/reconcile.cron   # every 5 min; edit QRIS_WALLET_DIR first
+```
+
+`pnpm reconcile --all` exits 1 on any issue and, when `ALERT_WEBHOOK_URL`
+is set, POSTs the payload there. Covers ledger imbalance, missing
+chain/provider records, and dwell breaches on the async manual legs.
+
 ## Wallet (M1, Base Sepolia testnet)
 
 ```sh
