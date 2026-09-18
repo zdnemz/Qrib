@@ -9,6 +9,7 @@ export type QrisData = {
   merchantName: string;
   merchantCity: string;
   merchantPan: string;
+  merchantId: string | null;
   mcc: string;
   currency: "IDR";
   /** Whole-rupiah string when the QR carries an amount (dynamic), else null (static). */
@@ -72,16 +73,29 @@ export function parseQris(input: unknown): QrisData {
   const initiation = once(fields, "01", "point of initiation");
   if (initiation !== "11" && initiation !== "12") throw new QrisError(`bad initiation method: ${initiation}`);
 
-  // Merchant account info (IDs 02–51): find the QRIS block by GUID, take its PAN.
-  const blocks = fields.filter((f) => f.id >= "02" && f.id <= "51").map((f) => parseTLVs(f.value, `block ${f.id}`));
+  // Merchant account info lives in one or more blocks (IDs 02–51). A real
+  // QRIS payload typically has TWO: a bank/acquirer block (e.g. 26, GUID
+  // ID.CO.BANKBSI.*) that carries the PAN, and the national QRIS block (51,
+  // GUID ID.CO.QRIS.*) that carries the merchant ID. So the PAN is taken from
+  // whichever block actually has tag 01 — not assumed to be the QRIS block.
+  const blocks = fields
+    .filter((f) => f.id >= "02" && f.id <= "51")
+    .map((f) => ({ subs: parseTLVs(f.value, `block ${f.id}`) }));
   if (!blocks.length) throw new QrisError("no merchant account information");
-  const qris = blocks.find((subs) => {
-    const guid = subs.find((s) => s.id === "00")?.value ?? "";
-    return guid.toUpperCase().startsWith("ID.CO.QRIS");
-  });
-  if (!qris) throw new QrisError("no QRIS merchant block (GUID ID.CO.QRIS.*)");
-  const merchantPan = qris.find((s) => s.id === "01")?.value;
-  if (!merchantPan) throw new QrisError("QRIS block has no merchant PAN");
+
+  const guidOf = (subs: TLV[]): string => (subs.find((s) => s.id === "00")?.value ?? "").toUpperCase();
+  const isQris = blocks.some((b) => guidOf(b.subs).startsWith("ID.CO.QRIS"));
+  if (!isQris) throw new QrisError("no QRIS merchant block (GUID ID.CO.QRIS.*)");
+
+  const panBlock = blocks.find((b) => b.subs.some((s) => s.id === "01"));
+  const merchantPan = panBlock?.subs.find((s) => s.id === "01")?.value;
+  if (!merchantPan) throw new QrisError("no merchant PAN in any account-information block");
+  // Merchant ID (QRIS national block, tag 51 sub 02) is what the QR identifies
+  // the merchant by; keep it when present rather than discarding it.
+  const merchantId = blocks
+    .filter((b) => guidOf(b.subs).startsWith("ID.CO.QRIS"))
+    .map((b) => b.subs.find((s) => s.id === "02")?.value)
+    .find((v): v is string => Boolean(v)) ?? null;
 
   const mcc = once(fields, "52", "merchant category");
   if (once(fields, "53", "currency") !== "360") throw new QrisError("only IDR (360) supported in v1");
@@ -104,6 +118,7 @@ export function parseQris(input: unknown): QrisData {
     merchantName,
     merchantCity,
     merchantPan,
+    merchantId,
     mcc,
     currency: "IDR",
     amountIdr: amountField ? wholeRupiah(amountField.value) : null,
