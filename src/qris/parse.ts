@@ -73,41 +73,40 @@ export function parseQris(input: unknown): QrisData {
   const initiation = once(fields, "01", "point of initiation");
   if (initiation !== "11" && initiation !== "12") throw new QrisError(`bad initiation method: ${initiation}`);
 
-  // Merchant account info lives in one or more blocks (IDs 02–51). A real
-  // QRIS payload typically has TWO: a bank/acquirer block (e.g. 26, GUID
-  // ID.CO.BANKBSI.*) that carries the PAN, and the national QRIS block (51,
-  // GUID ID.CO.QRIS.*) that carries the merchant ID. So the PAN is taken from
-  // whichever block actually has tag 01 — not assumed to be the QRIS block.
+  // CRC is the authenticity gate (§7.2): verify BEFORE trusting any field.
+  // A payload that fails its checksum is not a QRIS code, whatever its shape.
+  const last = fields[fields.length - 1];
+  if (last.id !== "63" || last.value.length !== 4) throw new QrisError("payload must end with CRC (63)");
+  const check = crc16ccitt(payload.slice(0, -4));
+  if (check !== last.value.toUpperCase()) throw new QrisError(`CRC mismatch: want ${check}`);
+
+  // Merchant account info (IDs 02–51). The required evidence is a merchant PAN
+  // in an account block; the national ID.CO.QRIS block is preferred for the
+  // merchant ID but NOT required — real payloads vary by acquirer (BANKBSI,
+  // BCA, GoPay, …), and §7.2 asks us to parse real QRs, not to whitelist banks.
   const blocks = fields
     .filter((f) => f.id >= "02" && f.id <= "51")
     .map((f) => ({ subs: parseTLVs(f.value, `block ${f.id}`) }));
   if (!blocks.length) throw new QrisError("no merchant account information");
 
   const guidOf = (subs: TLV[]): string => (subs.find((s) => s.id === "00")?.value ?? "").toUpperCase();
-  const isQris = blocks.some((b) => guidOf(b.subs).startsWith("ID.CO.QRIS"));
-  if (!isQris) throw new QrisError("no QRIS merchant block (GUID ID.CO.QRIS.*)");
-
   const panBlock = blocks.find((b) => b.subs.some((s) => s.id === "01"));
   const merchantPan = panBlock?.subs.find((s) => s.id === "01")?.value;
   if (!merchantPan) throw new QrisError("no merchant PAN in any account-information block");
-  // Merchant ID (QRIS national block, tag 51 sub 02) is what the QR identifies
-  // the merchant by; keep it when present rather than discarding it.
-  const merchantId = blocks
-    .filter((b) => guidOf(b.subs).startsWith("ID.CO.QRIS"))
-    .map((b) => b.subs.find((s) => s.id === "02")?.value)
-    .find((v): v is string => Boolean(v)) ?? null;
+  // Prefer the national block's merchant ID; fall back to the acquirer block's.
+  const merchantId =
+    blocks
+      .filter((b) => guidOf(b.subs).startsWith("ID.CO.QRIS"))
+      .map((b) => b.subs.find((s) => s.id === "02")?.value)
+      .find((v): v is string => Boolean(v)) ??
+    panBlock?.subs.find((s) => s.id === "02")?.value ??
+    null;
 
   const mcc = once(fields, "52", "merchant category");
   if (once(fields, "53", "currency") !== "360") throw new QrisError("only IDR (360) supported in v1");
   if (once(fields, "58", "country") !== "ID") throw new QrisError("only ID country supported in v1");
   const merchantName = once(fields, "59", "merchant name");
   const merchantCity = once(fields, "60", "merchant city");
-
-  // CRC must be the final field; value must match the recomputed checksum.
-  const last = fields[fields.length - 1];
-  if (last.id !== "63" || last.value.length !== 4) throw new QrisError("payload must end with CRC (63)");
-  const check = crc16ccitt(payload.slice(0, -4));
-  if (check !== last.value.toUpperCase()) throw new QrisError(`CRC mismatch: want ${check}`);
 
   const amountField = fields.find((f) => f.id === "54");
   if (initiation === "12" && !amountField) throw new QrisError("dynamic QR must carry amount (54)");
