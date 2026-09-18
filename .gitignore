@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+*.local
+coverage/
+# Encrypted keystores (and any sibling you create) are never committed.
+keystore.json
+*.keystore.json
