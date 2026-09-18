@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { requestId } from "hono/request-id";
 
 import { payments } from "./api/payments.js";
+import { qris } from "./api/qris.js";
 import { webhooks } from "./api/webhooks.js";
 import { db, type Db } from "./db/index.js";
 import { logger } from "./logger.js";
@@ -44,6 +45,7 @@ export function createApp(database: Db) {
   app.route("/wallet", wallet);
   app.route("/payments", payments);
   app.route("/webhooks", webhooks);
+  app.route("/qris", qris);
 
   return app;
 }

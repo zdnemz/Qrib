@@ -71,8 +71,32 @@ describe("HTTP surface (§12)", () => {
   });
 });
 
-describe("reconciler (§14.3)", () => {
-  it("flags tampered books and stuck intents, passes clean ones", async () => {
+describe("qris parse (§7.2)", () => {
+  const DYNAMIC =
+    "00020101021226480014ID.CO.QRIS.WWW011993600814000000012340203UMI5204541153033605405150005802ID5911TOKO BERKAH6007BANDUNG63043574";
+  it("parses dynamic → confirm, static → enter-amount, garbage → 422", async () => {
+    const ok = await app.request("/qris/parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload: DYNAMIC }),
+    });
+    expect(ok.status).toBe(200);
+    expect(await ok.json()).toMatchObject({
+      ok: true,
+      initiation: "dynamic",
+      amountIdr: "15000",
+      next: "confirm",
+    });
+    const bad = await app.request("/qris/parse", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ payload: "bukan-qr" }),
+    });
+    expect(bad.status).toBe(422);
+  });
+});
+
+describe("reconciler (§14.3)", () => {  it("flags tampered books and stuck intents, passes clean ones", async () => {
     const q = await createQuote(db, new MockOffRampProvider(), { fiatAmountIdr: 20_000n });
     // Direct write bypassing postEntries: simulates corruption, must be caught.
     await db.insert(ledgerEntries).values({

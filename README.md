@@ -1,7 +1,7 @@
 # QRIS Wallet (v1)
 
 Payment wallet that spends USDC directly on real QRIS merchants: scan → confirm → paid.
-Spec: `docs/PRD.md`. Status: **M2 engine on mocks** (state machine + quote/expiry + idempotency + ledger + mock/faulty providers + fault suite green).
+Spec: `docs/PRD.md`. Status: **M3a QRIS parse** (EMVCo TLV + CRC, static/dynamic, `POST /qris/parse`; PWA shell next).
 
 ## Engine (M2, mocked providers)
 
@@ -12,6 +12,8 @@ curl -X POST localhost:3000/payments/quote -H 'Idempotency-Key: a' \
 curl -X POST localhost:3000/payments/<id>/authorize -H 'Idempotency-Key: b'
 curl -X POST localhost:3000/payments/<id>/execute -H 'Idempotency-Key: c'
 # staging fault injection: -d '{"provider":"faulty-settle-fail"}' on execute
+# scan a QRIS code (read-only, no key needed):
+curl -X POST localhost:3000/qris/parse -d '{"payload":"0002...6304XXXX"}'
 pnpm test            # fault-injection suite (needs Postgres on :5435)
 pnpm reconcile --all # chain ↔ provider ↔ ledger truth-check (exit 1 on issues)
 ```
@@ -39,6 +41,7 @@ curl "localhost:3000/wallet/receive?address=0x...&amount=27.5"
 ```
 
 Mainnet needs explicit `?network=base`; everything defaults to `base-sepolia`.
+
 
 ## Run (dev)
 
