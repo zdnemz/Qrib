@@ -522,10 +522,15 @@ export function providersFromEnv(db: Db): Providers {
 function manualRef6(raw: string | undefined): bigint {
   // Fail closed: real first-party pricing must come from the founder's own
   // exchange screen, never a hardcoded staging default.
-  if (!raw || !/^\d+$/.test(raw)) {
-    throw new Error("MANUAL_IDR_PER_USDC (integer IDR per USDC) required with ENGINE_OFFRAMP=manual");
+  //
+  // The rate is accepted as a decimal (e.g. 17609.77) because real IDR/USDC
+  // rates carry sub-rupiah precision — rounding to whole rupiah would misprice
+  // every quote. Scaled to 6dp here; more than 6 decimals is rejected as noise.
+  if (!raw || !/^\d+(\.\d{1,6})?$/.test(raw.trim())) {
+    throw new Error("MANUAL_IDR_PER_USDC (IDR per USDC, up to 6 decimals) required with ENGINE_OFFRAMP=manual");
   }
-  return BigInt(raw) * 1_000_000n;
+  const [whole, frac = ""] = raw.trim().split(".");
+  return BigInt(whole) * 1_000_000n + BigInt(frac.padEnd(6, "0"));
 }
 
 export type OperatorResult = {
