@@ -25,12 +25,14 @@ function sign(method: string, path: string, rawBody: string): string {
 
 async function call(method: string, path: string, body?: unknown) {
   const raw = body === undefined ? "" : JSON.stringify(body);
+  // The server signs the pathname only (no query string) — match it exactly.
+  const signPath = path.split("?")[0];
   const res = await fetch(`${API}${path}`, {
     method,
     headers: {
       "Content-Type": "application/json",
       "Idempotency-Key": randomUUID(),
-      "X-Operator-Signature": sign(method, path, raw),
+      "X-Operator-Signature": sign(method, signPath, raw),
     },
     body: body === undefined ? undefined : raw,
   });
@@ -50,9 +52,10 @@ async function main() {
     const status = flag("status");
     if (status !== "COMPLETED" && status !== "FAILED") throw new Error("--status must be COMPLETED or FAILED");
     const body: Record<string, unknown> = { status };
-    for (const f of ["reference", "fiatAmountIdr", "rateExecuted6", "proof", "note"]) {
+    const aliased: Record<string, string> = { fiat: "fiatAmountIdr", rate: "rateExecuted6" };
+    for (const f of ["reference", "fiatAmountIdr", "rateExecuted6", "proof", "note", "fiat", "rate"]) {
       const v = flag(f);
-      if (v !== undefined) body[f] = v;
+      if (v !== undefined) body[aliased[f] ?? f] = v;
     }
     if (!arg) throw new Error("usage: pnpm operator complete <taskId> --status …");
     console.log(JSON.stringify(await call("POST", `/internal/tasks/${arg}/complete`, body), null, 2));

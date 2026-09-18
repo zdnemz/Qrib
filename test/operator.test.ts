@@ -164,6 +164,11 @@ describe("operator HTTP channel", () => {
     ).toBe(401);
     const { headers } = signed("GET", "/internal/tasks");
     expect((await app.request("/internal/tasks?status=PENDING", { headers })).status).toBe(200);
+    // A signature computed over the query string must NOT verify.
+    const sneaky = signOperator(SECRET, "GET", "/internal/tasks?status=PENDING", "");
+    expect(
+      (await app.request("/internal/tasks?status=PENDING", { headers: { "X-Operator-Signature": sneaky } })).status,
+    ).toBe(401);
   });
 
   it("completes a manual conversion leg over HTTP", async () => {
