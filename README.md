@@ -16,6 +16,7 @@ curl -X POST localhost:3000/payments/<id>/execute -H 'Idempotency-Key: c'
 curl -X POST localhost:3000/qris/parse -d '{"payload":"0002...6304XXXX"}'
 pnpm test            # fault-injection suite (needs Postgres on :5435)
 pnpm reconcile --all # chain ↔ provider ↔ ledger truth-check (exit 1 on issues)
+pnpm report          # per-payment cost model: gas + fees + realized spread (§15)
 ```
 
 Deliberately deferred: cron schedule for reconcile (explicit runbook until M5),

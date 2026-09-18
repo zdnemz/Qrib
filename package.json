@@ -18,7 +18,8 @@
     "test": "vitest run",
     "wallet": "tsx scripts/wallet.ts",
     "operator": "tsx scripts/operator.ts",
-    "reconcile": "tsx scripts/reconcile.ts"
+    "reconcile": "tsx scripts/reconcile.ts",
+    "report": "tsx scripts/report.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.1",
