@@ -15,7 +15,7 @@ export async function alertIfNeeded(
     const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source: "qris-wallet-reconcile", ...payload }),
+      body: JSON.stringify({ source: "qrib-reconcile", ...payload }),
       signal: AbortSignal.timeout(10_000),
     });
     return res.ok ? "sent" : "failed";

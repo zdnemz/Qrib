@@ -3,7 +3,7 @@ import "./globals.css";
 import { SwRegister } from "./sw-register";
 
 export const metadata: Metadata = {
-  title: "QRIS Wallet",
+  title: "Qrib",
   description: "Bayar QRIS pakai USDC: pindai, konfirmasi, lunas.",
   manifest: "/manifest.webmanifest",
   icons: { icon: "/icon.svg" },

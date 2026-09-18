@@ -25,7 +25,7 @@ describe("watchdog alert", () => {
     const port = (server.address() as { port: number }).port;
     const noisy = { issues: [{ paymentId: "p", check: "dwell", detail: "stuck" }], stuck: ["p"] };
     expect(await alertIfNeeded(`http://127.0.0.1:${port}/hook`, noisy)).toBe("sent");
-    expect(JSON.parse(capture.body)).toMatchObject({ source: "qris-wallet-reconcile", stuck: ["p"] });
+    expect(JSON.parse(capture.body)).toMatchObject({ source: "qrib-reconcile", stuck: ["p"] });
     server.close();
   });
 

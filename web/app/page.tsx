@@ -17,7 +17,7 @@ export default function Home() {
 
   return (
     <>
-      <h1>QRIS Wallet</h1>
+      <h1>Qrib</h1>
       <p className="muted">Bayar QRIS pakai USDC: pindai, konfirmasi, lunas.</p>
       {!address ? (
         <div className="card">

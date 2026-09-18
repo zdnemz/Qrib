@@ -1,4 +1,4 @@
-# QRIS Wallet (v1)
+# Qrib (v1)
 
 Payment wallet that spends USDC directly on real QRIS merchants: scan → confirm → paid.
 Spec: `docs/PRD.md`. Status: **M4 manual settlement** (first-party operator tasks + signed channel; mocks still default).
@@ -88,7 +88,7 @@ Mainnet needs explicit `?network=base`; everything defaults to `base-sepolia`.
 
 ```sh
 cp web/.env.example web/.env.local   # API URL, default localhost:3000
-pnpm --filter qris-wallet-web dev     # http://localhost:3100 (kamera: localhost = secure context)
+pnpm --filter qrib-web dev     # http://localhost:3100 (kamera: localhost = secure context)
 ```
 
 Alur: Dompet (buat/impor, kunci PBKDF2 di localStorage — server tetap bisa

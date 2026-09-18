@@ -1,5 +1,5 @@
 {
-  "name": "QRIS Wallet",
+  "name": "Qrib",
   "short_name": "QRIS",
   "description": "Bayar QRIS pakai USDC: pindai, konfirmasi, lunas.",
   "start_url": "/",
