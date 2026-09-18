@@ -7,6 +7,7 @@
 //     --fiat 27500 --rate 16000000000 [--proof ...] [--note ...]
 //   pnpm operator complete <taskId> --status FAILED --note "reason"
 //   pnpm operator resolve <paymentId> --to FAILED|REFUND_REQUIRED|AUTHORIZED --reason "…"
+//   pnpm operator refund <paymentId> --reference 0x<refund-tx-hash> [--cost <usdc-micros>]
 
 import "dotenv/config";
 import { createHmac, randomUUID } from "node:crypto";
@@ -69,8 +70,16 @@ async function main() {
       throw new Error("--to must be FAILED | REFUND_REQUIRED | AUTHORIZED");
     }
     console.log(JSON.stringify(await call("POST", `/internal/payments/${arg}/resolve`, { to, reason }), null, 2));
+  } else if (cmd === "refund") {
+    if (!arg) throw new Error("usage: pnpm operator refund <paymentId> --reference 0x<refund-tx-hash> [--cost <usdc-micros>]");
+    const reference = flag("reference");
+    if (!reference) throw new Error("--reference (the on-chain refund tx hash) is required");
+    const body: Record<string, unknown> = { reference };
+    const cost = flag("cost");
+    if (cost !== undefined) body.networkCostUsdcMicros = cost;
+    console.log(JSON.stringify(await call("POST", `/internal/payments/${arg}/refund`, body), null, 2));
   } else {
-    throw new Error("usage: pnpm operator <list|complete|resolve> …");
+    throw new Error("usage: pnpm operator <list|complete|resolve|refund> …");
   }
 }
 

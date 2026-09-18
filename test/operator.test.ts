@@ -171,8 +171,46 @@ describe("operator HTTP channel", () => {
     ).toBe(401);
   });
 
-  it("completes a manual conversion leg over HTTP", async () => {
-    const quote = await fundedIntent("13000");
+  it("refunds a REFUND_REQUIRED payment via the operator channel", async () => {
+    const quote = await fundedIntent("14000");
+    await execute(db, quote.paymentId, manual());
+    const [convTask] = (await listTasks(db, "PENDING")).filter((t) => t.paymentId === quote.paymentId);
+    await completeOperatorTask(db, manual(), convTask.id, { ...convResult(quote.fiatAmount), reference: "EX-RF" });
+    const [settleTask] = (await listTasks(db, "PENDING")).filter((t) => t.paymentId === quote.paymentId);
+    const stuck = await completeOperatorTask(db, manual(), settleTask.id, { status: "FAILED", note: "merchant refused" });
+    expect(stuck.intent.status).toBe("REFUND_REQUIRED");
+
+    const path = `/internal/payments/${quote.paymentId}/refund`;
+    const HASH = `0x${"ab".repeat(32)}`;
+
+    // The refund must not happen without on-chain evidence of the return.
+    const noRef = signed("POST", path, { reference: "not-a-hash" });
+    expect(
+      (await app.request(path, { method: "POST", headers: noRef.headers, body: noRef.raw })).status,
+    ).toBe(400);
+
+    const body = { reference: HASH, networkCostUsdcMicros: "10000" };
+    const res = await app.request(path, {
+      method: "POST",
+      headers: signed("POST", path, body).headers,
+      body: JSON.stringify(body),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ ok: true, status: "REFUNDED", reference: HASH });
+
+    // Books balance after the refund: USDC returns to the user minus the cost.
+    expect(await paymentNets(db, quote.paymentId)).toEqual({ USDC: 0n });
+
+    // Idempotent: a second refund of an already-REFUNDED payment is a no-op.
+    const again = await app.request(path, {
+      method: "POST",
+      headers: signed("POST", path, body).headers,
+      body: JSON.stringify(body),
+    });
+    expect(await again.json()).toMatchObject({ ok: true, status: "REFUNDED" });
+  });
+
+  it("completes a manual conversion leg over HTTP", async () => {    const quote = await fundedIntent("13000");
     await execute(db, quote.paymentId, manual());
     const [task] = (await listTasks(db, "PENDING")).filter((t) => t.paymentId === quote.paymentId);
 

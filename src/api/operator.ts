@@ -2,7 +2,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { Hono } from "hono";
 
 import type { Db } from "../db/index.js";
-import { completeOperatorTask, providersFromEnv, resolveReview, PaymentError } from "../engine/service.js";
+import { completeOperatorTask, providersFromEnv, refund, resolveReview, PaymentError } from "../engine/service.js";
 import type { OperatorResult } from "../engine/service.js";
 import { getTask, listTasks } from "../engine/tasks.js";
 import { idempotency } from "./idempotency.js";
@@ -77,6 +77,34 @@ internal.post("/payments/:id/resolve", idempotency, async (c) => {
   try {
     const intent = await resolveReview(c.get("db"), c.req.param("id") ?? "", body.to, body.reason);
     return c.json({ ok: true, status: intent.status, paymentId: intent.id });
+  } catch (err) {
+    if (err instanceof PaymentError) return c.json({ ok: false, error: err.message }, err.status as 400);
+    throw err;
+  }
+});
+
+/**
+ * Refund a REFUND_REQUIRED payment (§14.1 — the most important path). The
+ * founder returns the USDC on-chain, then reports the tx hash here; the ledger
+ * refund posts and the intent reaches REFUNDED. The hash is required because a
+ * refund without on-chain evidence is exactly the thing that must not happen.
+ */
+internal.post("/payments/:id/refund", idempotency, async (c) => {
+  const body = await c.req.json().catch(() => null) as { reference?: string; networkCostUsdcMicros?: string } | null;
+  if (!body?.reference || !/^0x[0-9a-fA-F]{64}$/.test(body.reference)) {
+    return c.json({ ok: false, error: "reference (0x-prefixed refund tx hash) required" }, 400);
+  }
+  const cost = body.networkCostUsdcMicros;
+  if (cost !== undefined && !/^\d+$/.test(cost)) {
+    return c.json({ ok: false, error: "networkCostUsdcMicros must be an integer string" }, 400);
+  }
+  try {
+    const intent = await refund(
+      c.get("db"),
+      c.req.param("id") ?? "",
+      cost === undefined ? undefined : BigInt(cost),
+    );
+    return c.json({ ok: true, status: intent.status, paymentId: intent.id, reference: body.reference });
   } catch (err) {
     if (err instanceof PaymentError) return c.json({ ok: false, error: err.message }, err.status as 400);
     throw err;
