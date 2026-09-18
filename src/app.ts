@@ -3,6 +3,7 @@ import { requestId } from "hono/request-id";
 
 import { db } from "./db/index.js";
 import { logger } from "./logger.js";
+import { wallet } from "./wallet/routes.js";
 
 export const app = new Hono();
 
@@ -32,5 +33,7 @@ app.get("/ready", async (c) => {
   }
 });
 
-// Wallet routes (M1) and engine surface (§12, M2) mount here next.
+app.route("/wallet", wallet);
+
+// Full API surface (§12) lands in M2 (engine) + M3 (qris/parse).
 // Unknown routes stay 404 so missing-surface bugs surface loudly.
