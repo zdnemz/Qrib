@@ -2,6 +2,7 @@
 
 Payment wallet that spends USDC directly on real QRIS merchants: scan → confirm → paid.
 Spec: `docs/PRD.md`. Brand: `docs/BRAND.md`. Running the 20-payment bar: `docs/M5-RUNBOOK.md`.
+Phone camera test: `docs/PHONE-SCAN.md`.
 Status: **M4 manual settlement** (first-party operator tasks + signed channel; mocks still default).
 
 ## Engine (M2, mocked providers)
