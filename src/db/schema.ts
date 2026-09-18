@@ -118,6 +118,9 @@ export const paymentAttempts = pgTable("payment_attempts", {
   attemptNo: integer("attempt_no").notNull(),
   state: text("state").notNull(),
   txHash: text("tx_hash"),
+  // §13 audit trail: every transition records actor + reason + prior state.
+  actor: text("actor").notNull().default("system"),
+  reason: text("reason"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
