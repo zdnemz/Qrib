@@ -7,20 +7,23 @@ token dan lock di bawah, bukan trik visualnya.
 
 ## Design Read
 
-Consumer fintech landing + wallet product UI untuk pembayar QRIS Indonesia,
-dengan bahasa trust-first yang bersih, berbasis Tailwind utilities + Geist
-+ motion pasif.
+Premium-consumer fintech marketing + wallet product UI untuk pembayar QRIS
+Indonesia, dengan bahasa premium yang bersih, berbasis Tailwind utilities +
+Geist + Motion.
 
 ## Dials
 
-DESIGN_VARIANCE 4 / MOTION_INTENSITY 3 / VISUAL_DENSITY 4.
-Uang mengalahkan estetika: statis + hover/active saja, tanpa lib animasi,
-tanpa scroll-hijack, tanpa marquee.
+DESIGN_VARIANCE 7 / MOTION_INTENSITY 7 / VISUAL_DENSITY 3.
+Premium berarti lapang dan berani: seksi jarang (py-16/24), tipe display
+besar, foto asli per halaman, motion beralasan per elemen (Reveal, Magnetic,
+Tilt, Template, semua statis di prefers-reduced-motion). Tanpa scroll-hijack,
+tanpa marquee, tanpa loop.
 
 ## Fondasi
 
 - Font: Geist (sans) + Geist Mono (angka, payload, ID). Tanpa serif display.
-- Ikon: tanpa lib ikon sampai benar butuh; tipografi yang bicara.
+- Ikon: Phosphor duotone di permukaan marketing saja; produk tetap tipografi.
+- Foto: picsum seed per penempatan (ganti foto brand bila ada).
 - Tema: satu sistem auto (light + `dark:`), ikut `prefers-color-scheme`.
 - Basis: putih / zinc-950. Teks: zinc-900 / zinc-100. Muted: zinc-600 / zinc-400.
 - Satu aksen: emerald. Tombol: emerald-700 di light, emerald-400 di dark.
@@ -32,7 +35,7 @@ tanpa scroll-hijack, tanpa marquee.
 
 - Satu aksen di semua permukaan. Tidak ada label CTA ganda untuk maksud sama.
 - Label CTA baku: "Pindai QR" (bayar), "Lihat riwayat" (riwayat),
-  "Cek saldo" (dompet), "Salin" (terima).
+  "Cek saldo" (dompet), "Salin" (terima), "Jelajahi fitur" (fitur).
 - Bahasa: Indonesia. Tanpa em-dash di teks terlihat.
 - Angka harus dari data asli (engine config) atau berlabel contoh.
 - Hero: maks 2 baris headline, sub maks 20 kata, CTA terlihat tanpa scroll,
@@ -42,15 +45,25 @@ tanpa scroll-hijack, tanpa marquee.
 
 ## Web (qrib-web, :3100)
 
-- `/`: hero split (copy + kartu struk contoh), Cara kerja (1 lebar + 2),
-  Batas yang jelas (angka engine asli), footer testnet.
-- `/scan`: tempel payload, nominal bila statis, quote, Bayar
+Rute grup transparan: `(marketing)` untuk pemasaran, `(app)` untuk produk.
+URL tidak berubah.
+
+- `/`: hero split premium (copy + foto + struk contoh), Cara kerja (1 lebar + 2),
+  pita foto merchant, Batas yang jelas (angka engine asli), CTA penutup.
+- `/fitur`: bento 2x2 berikon, split foto + kunci, CTA.
+- `/biaya`: kartu per spesifikasi (angka cermin `src/engine/config.ts`),
+  batas harian, CTA.
+- `/keamanan`: split foto, 4 prinsip, CTA ke FAQ.
+- `/faq`: akordeon native per kelompok, CTA.
+- `/scan`: kamera (getUserMedia + jsQR, fallback tempel payload),
+  nominal bila statis, quote dengan countdown hidup, Bayar
   (authorize lalu execute), Perbarui status, Batalkan, jejak attempts.
 - `/history`: server-rendered, empty state mengarah ke /scan, tiap tile
   taut ke `/history/[id]`.
 - `/history/[id]`: struk (nominal, status, quote, jejak attempts).
-- `/wallet`: alamat tersimpan di localStorage, saldo, receive URI + salin.
-  Kunci privat tidak pernah lewat sini.
+- `/wallet`: buat/impor (PBKDF2, envelope sama dengan CLI),
+  buka/kunci, kirim USDC dari perangkat, saldo, receive URI + QR + salin.
+  Kunci mentah tidak pernah keluar dari memori.
 - Token bersama di `web/lib/ui.ts` (satu aksen emerald, pill, kartu 16px).
 
 ## Mobile (qrib-mobile, Expo SDK 57)
@@ -75,4 +88,4 @@ tanpa alasan tercatat di sini.
 
 ## Ditunda (tambah bila diukur butuh)
 
-Kamera/jsQR, countdown quote hidup, gambar hero, lib ikon, lib animasi.
+foto brand pengganti picsum, lib animasi selain Motion.

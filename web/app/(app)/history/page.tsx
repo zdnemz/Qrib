@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { idr, listPayments, statusId } from "../../lib/api";
-import { card, errorCard, muted, primary } from "../../lib/ui";
+import { idr, listPayments, statusId } from "../../../lib/api";
+import { card, errorCard, muted, primary } from "../../../lib/ui";
 
 export default async function History() {
   let payments: Awaited<ReturnType<typeof listPayments>>["payments"] = [];

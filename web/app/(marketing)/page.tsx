@@ -1,31 +1,71 @@
+import { ArrowRight, Camera, Timer, Wallet } from "@phosphor-icons/react/dist/ssr";
+import Image from "next/image";
 import Link from "next/link";
-import { card, muted, primary, secondary, tint } from "../lib/ui";
+import Magnetic from "../../components/Magnetic";
+import Reveal from "../../components/Reveal";
+import Tilt from "../../components/Tilt";
+import { card, muted, primary, secondary, tint } from "../../lib/ui";
 
-// Landing: trust-first. Three sections, zero eyebrows, one accent (emerald),
-// buttons pill + cards 16px. Motion 3: hover and active states only.
+// Marketing home: premium consumer. Airy sections, real photography,
+// one accent (emerald), zero eyebrows. Motion: reveals + magnetic + tilt.
+
+const STEPS = [
+  {
+    icon: Camera,
+    title: "Pindai",
+    body: "Kamera membaca kode langsung, atau tempel payload. Nominal dinamis terbaca otomatis, nominal statis tinggal isi sendiri.",
+    wide: true,
+  },
+  {
+    icon: Timer,
+    title: "Kunci",
+    body: "Minta quote dan kunci kurs 90 detik. Countdown terlihat, Bayar terkunci saat kedaluwarsa.",
+    wide: false,
+  },
+  {
+    icon: Wallet,
+    title: "Lunas",
+    body: "Satu ketuk bayar dari dompet perangkat. Struk tercatat di riwayat.",
+    wide: false,
+  },
+];
 
 export default function Home() {
   return (
     <main className="mx-auto max-w-7xl px-4">
-      <section className="grid min-h-[calc(100dvh-8rem)] items-center gap-10 py-12 md:grid-cols-2">
-        <div>
-          <h1 className="text-4xl font-bold tracking-tighter md:text-6xl">
+      <section className="grid items-center gap-12 py-16 md:grid-cols-2 md:py-24">
+        <Reveal>
+          <h1 className="text-5xl font-bold leading-[1.05] tracking-tighter md:text-7xl">
             Bayar QRIS pakai USDC.
           </h1>
-          <p className={`mt-4 max-w-[65ch] text-base leading-relaxed ${muted}`}>
-            Pindai kode QRIS, kunci kurs 90 detik, lunasi dalam rupiah.
+          <p className={`mt-5 max-w-[45ch] text-lg leading-relaxed ${muted}`}>
+            USDC yang selama ini diam kini belanja. Pindai, kunci kurs, lunasi dalam rupiah.
           </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Link href="/scan" className={primary}>
-              Pindai QR
-            </Link>
-            <Link href="/history" className={secondary}>
-              Lihat riwayat
-            </Link>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Magnetic>
+              <Link href="/scan" className={primary}>
+                Pindai QR
+              </Link>
+            </Magnetic>
+            <Magnetic>
+              <Link href="/fitur" className={secondary}>
+                Jelajahi fitur
+              </Link>
+            </Magnetic>
           </div>
-        </div>
-        <div>
-          <div className={tint}>
+        </Reveal>
+        <Reveal delay={0.1}>
+          <Tilt>
+            <Image
+              src="https://picsum.photos/seed/qrib-kasir/1200/960"
+              alt="Kasir warung kopi memegang kode QRIS"
+              width={1200}
+              height={960}
+              priority
+              className="aspect-[5/4] w-full rounded-2xl object-cover"
+            />
+          </Tilt>
+          <div className={`${tint} mt-6`}>
             <p className={`font-mono text-xs ${muted}`}>STRUK</p>
             <p className="mt-2 text-3xl font-bold tracking-tight">Rp27.500</p>
             <p className={`mt-1 text-sm ${muted}`}>Kopi Kenangan</p>
@@ -34,56 +74,87 @@ export default function Home() {
             </p>
           </div>
           <p className={`mt-2 text-sm ${muted}`}>Contoh struk.</p>
+        </Reveal>
+      </section>
+
+      <section className="py-16 md:py-24">
+        <Reveal>
+          <h2 className="max-w-[20ch] text-3xl font-bold tracking-tighter md:text-5xl">
+            Tiga langkah dari pindai sampai lunas.
+          </h2>
+        </Reveal>
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
+          {STEPS.map((s, i) => (
+            <Reveal key={s.title} delay={0.05 * i} className={s.wide ? "md:col-span-2" : undefined}>
+              <div className={s.wide ? tint : card}>
+                <s.icon size={28} weight="duotone" className="text-emerald-700 dark:text-emerald-400" />
+                <h3 className="mt-4 text-xl font-semibold">{s.title}</h3>
+                <p className={`mt-1 max-w-[65ch] ${muted}`}>{s.body}</p>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </section>
 
-      <section className="py-16">
-        <h2 className="text-3xl font-bold tracking-tighter">Cara kerja</h2>
-        <p className={`mt-2 max-w-[65ch] ${muted}`}>
-          Tiga langkah dari pindai sampai lunas, tanpa aplikasi bank tambahan.
-        </p>
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <div className={`${tint} md:col-span-2`}>
-            <h3 className="text-xl font-semibold">Pindai</h3>
-            <p className={`mt-1 max-w-[65ch] ${muted}`}>
-              Tempel payload QRIS. Nominal dinamis langsung terbaca, nominal statis tinggal isi
-              sendiri.
-            </p>
-          </div>
-          <div className={card}>
-            <h3 className="text-xl font-semibold">Kunci</h3>
-            <p className={`mt-1 ${muted}`}>Minta quote dan kunci kurs 90 detik sebelum bayar.</p>
-          </div>
-          <div className={`${card} border-emerald-700/30 dark:border-emerald-400/30`}>
-            <h3 className="text-xl font-semibold">Lunas</h3>
-            <p className={`mt-1 ${muted}`}>Satu ketuk bayar, struk tercatat di riwayat.</p>
-          </div>
+      <section className="py-16 md:py-24">
+        <Reveal>
+          <Image
+            src="https://picsum.photos/seed/qrib-warung/1600/800"
+            alt="Suasana warung makan Indonesia yang ramai"
+            width={1600}
+            height={800}
+            loading="lazy"
+            className="aspect-[2/1] w-full rounded-2xl object-cover"
+          />
+          <p className={`mt-3 max-w-[65ch] ${muted}`}>
+           Merchant tidak berubah. Mereka terima rupiah seperti biasa, dana USDC Anda yang bekerja.
+          </p>
+        </Reveal>
+      </section>
+
+      <section className="py-16 md:py-24">
+        <Reveal>
+          <h2 className="text-3xl font-bold tracking-tighter md:text-5xl">Batas yang jelas.</h2>
+          <p className={`mt-3 max-w-[65ch] ${muted}`}>
+            Berjalan di testnet: dana tidak bernilai. Angka ikut konfigurasi engine.{" "}
+            <Link href="/biaya" className="underline">
+              Rincian biaya
+            </Link>
+          </p>
+        </Reveal>
+        <div className="mt-10 grid gap-6 md:grid-cols-2">
+          {[
+            { v: "Rp500.000", l: "Maksimal per transaksi", hot: true },
+            { v: "Rp2.000.000", l: "Maksimal per hari", hot: false },
+            { v: "90 detik", l: "Masa berlaku tiap quote", hot: false },
+            { v: "0,5% + Rp320", l: "Spread dan biaya per bayar", hot: true },
+          ].map((s, i) => (
+            <Reveal key={s.l} delay={0.05 * i}>
+              <div className={s.hot ? tint : card}>
+                <p className="text-3xl font-bold tracking-tight md:text-4xl">{s.v}</p>
+                <p className={`mt-1 ${muted}`}>{s.l}</p>
+              </div>
+            </Reveal>
+          ))}
         </div>
       </section>
 
-      <section className="py-16">
-        <h2 className="text-3xl font-bold tracking-tighter">Batas yang jelas</h2>
-        <p className={`mt-2 max-w-[65ch] ${muted}`}>
-          Berjalan di testnet: dana tidak bernilai. Angka ikut konfigurasi engine.
-        </p>
-        <div className="mt-8 grid gap-6 md:grid-cols-2">
-          <div className={tint}>
-            <p className="text-3xl font-bold tracking-tight">Rp500.000</p>
-            <p className={`mt-1 ${muted}`}>Maksimal per transaksi</p>
+      <section className="mx-auto max-w-3xl py-16 text-center md:py-24">
+        <Reveal>
+          <h2 className="text-3xl font-bold tracking-tighter md:text-5xl">
+            Kopi berikutnya pakai USDC.
+          </h2>
+          <p className={`mx-auto mt-3 max-w-[45ch] ${muted}`}>
+            Buat dompet di perangkat, isi USDC testnet, pindai kode pertama.
+          </p>
+          <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <Magnetic>
+              <Link href="/scan" className={`${primary} inline-flex items-center gap-2`}>
+                Pindai QR <ArrowRight size={18} weight="bold" />
+              </Link>
+            </Magnetic>
           </div>
-          <div className={card}>
-            <p className="text-3xl font-bold tracking-tight">Rp2.000.000</p>
-            <p className={`mt-1 ${muted}`}>Maksimal per hari</p>
-          </div>
-          <div className={card}>
-            <p className="text-3xl font-bold tracking-tight">90 detik</p>
-            <p className={`mt-1 ${muted}`}>Masa berlaku tiap quote</p>
-          </div>
-          <div className={tint}>
-            <p className="text-3xl font-bold tracking-tight">0,5% + Rp320</p>
-            <p className={`mt-1 ${muted}`}>Spread dan biaya per bayar</p>
-          </div>
-        </div>
+        </Reveal>
       </section>
     </main>
   );

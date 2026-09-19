@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { getPayment, idr, statusId } from "../../../lib/api";
-import { card, errorCard, muted, secondary, tint } from "../../../lib/ui";
+import { getPayment, idr, statusId } from "../../../../lib/api";
+import { card, errorCard, muted, secondary, tint } from "../../../../lib/ui";
 
 export default async function PaymentDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
