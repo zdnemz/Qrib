@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:all": "concurrently -n api,web \"pnpm dev\" \"pnpm dev:web\"",
     "dev:web": "pnpm --filter qrib-web dev",
     "dev:mobile": "pnpm --filter qrib-mobile start",
     "build:web": "pnpm --filter qrib-web build",
@@ -38,6 +39,7 @@
   "devDependencies": {
     "@types/node": "^26.6.1",
     "@types/pg": "^8.23.1",
+    "concurrently": "^10.0.5",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2",
