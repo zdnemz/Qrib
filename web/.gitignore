@@ -1,6 +1,0 @@
-node_modules/
-.next/
-out/
-*.local
-# Next/TS incremental build cache — machine-local, never worth committing.
-*.tsbuildinfo
