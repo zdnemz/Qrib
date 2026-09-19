@@ -9,6 +9,11 @@
   },
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:web": "pnpm --filter qrib-web dev",
+    "dev:mobile": "pnpm --filter qrib-mobile start",
+    "build:web": "pnpm --filter qrib-web build",
+    "lint:web": "pnpm --filter qrib-web lint",
+    "typecheck:web": "pnpm --filter qrib-web exec tsc --noEmit",
     "start": "node dist/index.js",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
