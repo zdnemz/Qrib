@@ -1,0 +1,9 @@
+{
+  "name": "qrib-extension",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Qrib Chrome extension — USDC to QRIS",
+  "scripts": {
+    "dev": "echo \"load unpacked via chrome://extensions → extension/\""
+  }
+}
