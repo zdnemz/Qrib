@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Scanner from "../../../components/Scanner";
+import Magnetic from "../../../components/Magnetic";
+import Reveal from "../../../components/Reveal";
 import {
   authorize,
   cancel,
@@ -13,8 +16,8 @@ import {
   type Payment,
   type QrisParse,
   type Quote,
-} from "../../lib/api";
-import { card, errorCard, input, muted, primary, secondary, tint } from "../../lib/ui";
+} from "../../../lib/api";
+import { card, errorCard, input, muted, primary, secondary, tint } from "../../../lib/ui";
 
 const TERMINAL = new Set([
   "COMPLETED",
@@ -25,11 +28,27 @@ const TERMINAL = new Set([
   "REFUND_REQUIRED",
 ]);
 
+/** Live countdown to quote expiry. Bayar locks at zero until a fresh quote. */
+function Countdown({ expiresAt }: { expiresAt: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const left = Math.max(0, Math.round((new Date(expiresAt).getTime() - now) / 1000));
+  return (
+    <p className={`mt-1 font-mono text-sm ${left === 0 ? "text-red-700 dark:text-red-300" : muted}`}>
+      {left === 0 ? "Quote kedaluwarsa, minta lagi" : `Berlaku ${left} detik lagi`}
+    </p>
+  );
+}
+
 export default function Scan() {
   const [payload, setPayload] = useState("");
   const [parsed, setParsed] = useState<QrisParse | null>(null);
   const [amount, setAmount] = useState("");
   const [quote, setQuote] = useState<Quote | null>(null);
+  const [quoteExpired, setQuoteExpired] = useState(false);
   const [payment, setPayment] = useState<Payment | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,14 +65,21 @@ export default function Scan() {
     }
   };
 
-  const onParse = () =>
-    run(async () => {
-      const r = await parseQris(payload.trim());
-      setParsed(r);
-      setAmount(r.amountIdr ?? "");
-      setQuote(null);
-      setPayment(null);
-    });
+  const parse = async (text: string) => {
+    const r = await parseQris(text);
+    setParsed(r);
+    setAmount(r.amountIdr ?? "");
+    setQuote(null);
+    setQuoteExpired(false);
+    setPayment(null);
+  };
+
+  const onParse = () => run(() => parse(payload.trim()));
+
+  const onScanned = (text: string) => {
+    setPayload(text);
+    run(() => parse(text));
+  };
 
   const onQuote = () =>
     run(async () => {
@@ -64,11 +90,23 @@ export default function Scan() {
         merchantId: parsed.merchantId ?? undefined,
       });
       setQuote(q);
+      setQuoteExpired(false);
     });
+
+  useEffect(() => {
+    if (!quote) return;
+    const t = setInterval(() => {
+      if (Date.now() >= new Date(quote.expiresAt).getTime()) {
+        setQuoteExpired(true);
+        clearInterval(t);
+      }
+    }, 1000);
+    return () => clearInterval(t);
+  }, [quote]);
 
   const onPay = () =>
     run(async () => {
-      if (!quote) return;
+      if (!quote || quoteExpired) return;
       const a = await authorize(quote.paymentId);
       const e = await execute(a.payment.id);
       setPayment(e.payment);
@@ -91,13 +129,17 @@ export default function Scan() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-12">
       <h1 className="text-4xl font-bold tracking-tighter">Pindai QR</h1>
-      <p className={`mt-2 max-w-[65ch] ${muted}`}>Tempel payload QRIS, kunci kurs, bayar.</p>
+      <p className={`mt-2 max-w-[65ch] ${muted}`}>Pindai dari kamera atau tempel payload, kunci kurs, bayar.</p>
 
       {error && (
         <p role="alert" className={`${errorCard} mt-6`}>
           {error}
         </p>
       )}
+
+      <section className={`${card} mt-6`}>
+        <Scanner onPayload={onScanned} disabled={busy} />
+      </section>
 
       <section className={`${card} mt-6`}>
         <label htmlFor="payload" className="font-medium">
@@ -148,19 +190,21 @@ export default function Scan() {
       )}
 
       {quote && (
-        <section className={`${tint} mt-6`}>
-          <h2 className="text-xl font-semibold">Quote</h2>
-          <p className="mt-2 text-3xl font-bold tracking-tight">{idr(quote.fiatAmount)}</p>
-          <p className={`mt-1 font-mono text-sm ${muted}`}>
-            {quote.cryptoAmount} USDC - berlaku hingga{" "}
-            {new Date(quote.expiresAt).toLocaleTimeString("id-ID")}
-          </p>
+        <Reveal>
+          <section className={`${tint} mt-6`}>
+            <h2 className="text-xl font-semibold">Quote</h2>
+            <p className="mt-2 text-3xl font-bold tracking-tight">{idr(quote.fiatAmount)}</p>
+            <p className={`mt-1 font-mono text-sm ${muted}`}>{quote.cryptoAmount} USDC</p>
+            <Countdown expiresAt={quote.expiresAt} />
           <div className="mt-4 flex flex-wrap gap-3">
-            <button onClick={onPay} disabled={busy} className={primary}>
-              Bayar
-            </button>
+            <Magnetic>
+              <button onClick={onPay} disabled={busy || quoteExpired} className={primary}>
+                Bayar
+              </button>
+            </Magnetic>
           </div>
-        </section>
+          </section>
+        </Reveal>
       )}
 
       {payment && (
