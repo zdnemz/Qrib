@@ -1,4 +1,6 @@
 packages:
   - web
+  - mobile
 allowBuilds:
   esbuild: true
+  unrs-resolver: true
