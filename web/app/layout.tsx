@@ -24,10 +24,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               Qrib
             </Link>
             <Link href="/scan" className={`${link} hover:bg-zinc-100 dark:hover:bg-zinc-800`}>
-              Pindai
+              Pindai QR
             </Link>
             <Link href="/history" className={`${link} hover:bg-zinc-100 dark:hover:bg-zinc-800`}>
-              Riwayat
+              Lihat riwayat
             </Link>
             <Link href="/wallet" className={`${link} hover:bg-zinc-100 dark:hover:bg-zinc-800`}>
               Dompet

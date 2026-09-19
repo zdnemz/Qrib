@@ -81,6 +81,7 @@ export const requestQuote = (body: { fiatAmount: string; merchantName?: string; 
 export const authorize = (id: string) => post<{ payment: Payment }>(`/payments/${id}/authorize`, {});
 export const execute = (id: string) => post<{ payment: Payment }>(`/payments/${id}/execute`, {});
 export const cancel = (id: string) => post<{ payment: Payment }>(`/payments/${id}/cancel`, {});
+export const refund = (id: string) => post<{ payment: Payment }>(`/payments/${id}/refund`, {});
 
 export const getPayment = (id: string) => api<{ payment: Payment }>(`/payments/${id}`);
 export const listPayments = () => api<{ payments: Payment[] }>("/payments");
@@ -105,6 +106,7 @@ const STATUS_ID: Record<string, string> = {
   COMPLETED: "Lunas",
   FAILED: "Gagal",
   EXPIRED: "Kedaluwarsa",
+  CANCELLED: "Dibatalkan",
   RECONCILIATION_REQUIRED: "Perlu peninjauan",
   REFUND_REQUIRED: "Perlu refund",
 };

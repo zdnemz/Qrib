@@ -46,9 +46,12 @@ tanpa scroll-hijack, tanpa marquee.
   Batas yang jelas (angka engine asli), footer testnet.
 - `/scan`: tempel payload, nominal bila statis, quote, Bayar
   (authorize lalu execute), Perbarui status, Batalkan, jejak attempts.
-- `/history`: server-rendered, empty state mengarah ke /scan.
+- `/history`: server-rendered, empty state mengarah ke /scan, tiap tile
+  taut ke `/history/[id]`.
+- `/history/[id]`: struk (nominal, status, quote, jejak attempts).
 - `/wallet`: alamat tersimpan di localStorage, saldo, receive URI + salin.
   Kunci privat tidak pernah lewat sini.
+- Token bersama di `web/lib/ui.ts` (satu aksen emerald, pill, kartu 16px).
 
 ## Mobile (qrib-mobile, Expo SDK 57)
 
