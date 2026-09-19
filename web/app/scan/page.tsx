@@ -7,24 +7,53 @@ import { parseQris, type QrisParse } from "../../lib/api";
 
 export const SCAN_KEY = "qw.scan";
 
+/** Human-readable reason from a getUserMedia rejection, for on-screen display. */
+function cameraError(err: unknown): string {
+  const name = (err as { name?: string })?.name ?? "";
+  if (name === "NotAllowedError") {
+    return "Izin kamera ditolak. Aktifkan izin kamera untuk situs ini di pengaturan browser, lalu muat ulang.";
+  }
+  if (name === "NotFoundError" || name === "OverconstrainedError") {
+    return "Tidak ada kamera yang cocok ditemukan. Coba tempel payload manual di bawah.";
+  }
+  if (name === "NotReadableError") {
+    return "Kamera sedang dipakai aplikasi lain (atau gagal dibuka oleh sistem). Tutup aplikasi lain, lalu muat ulang.";
+  }
+  if (name === "SecurityError" || !window.isSecureContext) {
+    return "Kamera butuh HTTPS. Buka halaman ini lewat alamat https://, bukan http://.";
+  }
+  return `Kamera gagal dibuka (${name || "penyebab tidak diketahui"}). Tempel payload manual di bawah.`;
+}
+
 export default function Scan() {
   const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [manual, setManual] = useState("");
-  const stopRef = useRef(false);
+  // Prevents the StrictMode double-mount from racing two getUserMedia calls.
+  const startingRef = useRef(false);
 
   useEffect(() => {
+    let cancelled = false;
     let stream: MediaStream | null = null;
     let raf = 0;
     let last = 0;
-    stopRef.current = false;
 
-    const tick = async (t: number) => {
-      if (stopRef.current) return;
+    const handlePayload = async (payload: string) => {
+      try {
+        const parsed: QrisParse = await parseQris(payload.trim());
+        sessionStorage.setItem(SCAN_KEY, JSON.stringify({ ...parsed, payload: payload.trim() }));
+        router.push("/confirm");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "QR tidak terbaca");
+      }
+    };
+
+    const tick = (t: number) => {
+      if (cancelled) return;
       raf = requestAnimationFrame(tick);
-      if (t - last < 150) return; // ~7 fps: hemat baterai, cukup untuk QR
+      if (t - last < 150) return; // ~7 fps: enough for a QR, easier on the battery
       last = t;
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -36,40 +65,45 @@ export default function Scan() {
       ctx.drawImage(video, 0, 0);
       const found = jsQR(ctx.getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, canvas.height);
       if (found?.data) {
-        stopRef.current = true;
-        await handlePayload(found.data);
-      }
-    };
-
-    const handlePayload = async (payload: string) => {
-      try {
-        const parsed: QrisParse = await parseQris(payload.trim());
-        sessionStorage.setItem(SCAN_KEY, JSON.stringify({ ...parsed, payload: payload.trim() }));
-        router.push("/confirm");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "QR tidak terbaca");
-        stopRef.current = false;
+        cancelled = true; // one successful decode is enough
+        void handlePayload(found.data);
       }
     };
 
     (async () => {
+      // StrictMode mounts effects twice in dev. A second concurrent
+      // getUserMedia on the same device is what makes mobile browsers throw;
+      // let the first mount own the camera and skip the duplicate.
+      if (startingRef.current) return;
+      startingRef.current = true;
       try {
+        if (!navigator.mediaDevices?.getUserMedia) {
+          setError("Browser ini tidak mendukung akses kamera. Tempel payload manual di bawah.");
+          return;
+        }
         stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          video: { facingMode: { ideal: "environment" } },
           audio: false,
         });
-        if (videoRef.current && !stopRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-          raf = requestAnimationFrame(tick);
+        if (cancelled || !videoRef.current) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
         }
-      } catch {
-        setError("Kamera tidak tersedia —HTTPS atau izin ditolak. Tempel payload manual di bawah.");
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+        raf = requestAnimationFrame(tick);
+      } catch (err) {
+        // Surfacing the real reason beats a generic message: permission,
+        // https, and device-in-use are fixed in completely different ways.
+        console.error("getUserMedia failed:", err);
+        setError(cameraError(err));
+      } finally {
+        startingRef.current = false;
       }
     })();
 
     return () => {
-      stopRef.current = true;
+      cancelled = true;
       cancelAnimationFrame(raf);
       stream?.getTracks().forEach((t) => t.stop());
     };
